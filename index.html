@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- VK Bridge SDK -->
+    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
     <style>
         /* --- ОБЩИЕ СТИЛИ И ПЕРЕМЕННЫЕ --- */
         :root {
@@ -160,6 +162,16 @@
         .key.absent { background-color: var(--color-absent); color: var(--color-text-on-colored-bg); }
         .game-actions { display: flex; gap: 10px; margin-bottom: 10px; width: 100%; }
         .action-button { flex-grow: 1; padding: 15px; font-size: 1rem; }
+        
+        #banner-ad-container {
+            width: 100%;
+            max-width: 500px;
+            margin-top: 5px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
         .modal-overlay.visible { opacity: 1; visibility: visible; }
@@ -193,7 +205,7 @@
         #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
 
         @media (min-width: 768px) {
-            #grid-container, #keyboard-area {
+            #grid-container, #keyboard-area, .game-header {
                 max-width: 640px;
             }
             .key {
@@ -243,6 +255,7 @@
             </div>
             <div id="keyboard"></div>
         </div>
+        <div id="banner-ad-container"></div>
     </div>
 
     <!-- МОДАЛЬНЫЕ ОКНА -->
@@ -290,6 +303,9 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // Инициализация VK Bridge
+        vkBridge.send('VKWebAppInit');
+
         // --- СЛОВАРИ ---
         const wordsOne = {
             4: ["БАБА", "БАЗА", "БАНК", "БЕДА"],
@@ -346,6 +362,33 @@
         
         // --- ИГРОВОЕ СОСТОЯНИЕ ---
         let wordLength = 5, secretWord = '', currentRow = 0, currentGuess = '', isGameOver = false, timerInterval, startTime, stats = {};
+
+        // --- РЕКЛАМА ---
+        const showBannerAd = () => {
+            vkBridge.send('VKWebAppShowBannerAd', {
+                banner_location: 'bottom'
+            }).then(data => {
+                if (data.result) {
+                    console.log('Баннер показан');
+                }
+            }).catch(error => {
+                console.log('Ошибка показа баннера:', error);
+            });
+        };
+
+        const showInterstitialAd = (callback) => {
+            vkBridge.send('VKWebAppShowNativeAds', {
+                ad_format: 'interstitial'
+            }).then(data => {
+                if (data.result) {
+                    console.log('Полноэкранная реклама показана');
+                }
+                if (callback) callback();
+            }).catch(error => {
+                console.log('Ошибка показа полноэкранной рекламы:', error);
+                if (callback) callback(); // Продолжаем игру даже если реклама не показалась
+            });
+        };
 
         // --- ШИФРОВАНИЕ ---
         const RUS_TO_LATIN_MAP = { 'а': 'A', 'б': 'B', 'в': 'V', 'г': 'G', 'д': 'D', 'е': 'E', 'ё': 'XE', 'ж': 'J', 'з': 'Z', 'и': 'I', 'й': 'Y', 'к': 'K', 'л': 'L', 'м': 'M', 'н': 'N', 'о': 'O', 'п': 'P', 'р': 'R', 'с': 'S', 'т': 'T', 'у': 'U', 'ф': 'F', 'х': 'H', 'ц': 'C', 'ч': 'Q', 'ш': 'W', 'щ': 'XS', 'ъ': 'XH', 'ы': 'XI', 'ь': 'XB', 'э': 'XT', 'ю': 'XU', 'я': 'XA' };
@@ -411,7 +454,7 @@
         const addEventListeners = () => {
             elements.startGameBtn.addEventListener('click', () => { selectRandomWord(); startGame(); });
             elements.menuBtn.addEventListener('click', showMenu);
-            elements.hintBtn.addEventListener('click', useHint);
+            elements.hintBtn.addEventListener('click', () => showInterstitialAd(useHint));
             elements.checkWordBtn.addEventListener('click', submitGuess);
             elements.rulesBtn.addEventListener('click', () => elements.rulesModal.classList.add('visible'));
             elements.statsBtn.addEventListener('click', () => { displayStats(); elements.statsModal.classList.add('visible'); });
@@ -437,6 +480,7 @@
             elements.menuScreen.style.display = 'none';
             elements.gameScreen.style.display = 'flex';
             startTimer();
+            showBannerAd();
         };
 
         const selectRandomWord = () => { 
@@ -572,12 +616,12 @@
                 updateStats(true);
                 const tiles = getCurrentRowTiles();
                 tiles.forEach((tile, i) => setTimeout(() => tile.classList.add('win-dance'), i * 100));
-                setTimeout(() => showEndGameModal(true), wordLength * 100 + 500);
+                setTimeout(() => showInterstitialAd(() => showEndGameModal(true)), wordLength * 100 + 500);
             } else if (currentRow === 5) {
                 isGameOver = true;
                 clearInterval(timerInterval);
                 updateStats(false);
-                setTimeout(() => showEndGameModal(false), 500);
+                setTimeout(() => showInterstitialAd(() => showEndGameModal(false)), 500);
             } else {
                 currentRow++;
                 currentGuess = '';
