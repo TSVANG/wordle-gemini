@@ -7,8 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- VK Bridge SDK -->
-    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+    
+     <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script> 
     <style>
         /* --- ОБЩИЕ СТИЛИ И ПЕРЕМЕННЫЕ --- */
         :root {
@@ -84,6 +84,10 @@
             flex-direction: column;
             align-items: center;
             padding: 10px 5px;
+            overflow-y: auto; /* Добавлено для прокрутки на очень маленьких экранах */
+        }
+
+        #menu-screen {
             justify-content: center;
         }
 
@@ -96,9 +100,25 @@
         button:active, .button:active { transform: scale(0.96); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        #menu-screen .title { font-size: clamp(2.5rem, 10vw, 3.5rem); margin-bottom: 40px; letter-spacing: 0.1em; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
-        .menu-options { display: flex; flex-direction: column; gap: 15px; width: 90%; max-width: 320px; }
-        .menu-button { padding: 15px; font-size: 1.1rem; width: 100%; }
+        #menu-screen .title {
+            font-size: clamp(2.2rem, 10vw, 3.5rem);
+            margin-bottom: clamp(20px, 5vh, 40px);
+            letter-spacing: 0.1em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        .menu-options {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(8px, 2vh, 15px);
+            width: 90%;
+            max-width: 320px;
+        }
+        .menu-button {
+            padding: clamp(12px, 2.5vh, 15px);
+            font-size: clamp(1rem, 2.2vh, 1.1rem);
+            width: 100%;
+        }
         .difficulty-selector, .theme-switcher { display: flex; flex-direction: column; align-items: center; gap: 10px; background-color: var(--modal-bg-color); padding: 15px; border-radius: 12px; box-shadow: var(--shadow); width: 100%; }
         .difficulty-buttons { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 400px; margin: 0 auto; }
         .difficulty-btn { padding: 8px 12px; font-size: 0.9rem; flex-grow: 1; }
@@ -130,13 +150,19 @@
             max-width: 500px;
             margin: 10px auto;
         }
-        .row { display: flex; justify-content: center; gap: 5px; }
+        .row { display: flex; justify-content: center; gap: 5px; flex: 1; min-height: 0;}
         .tile {
             position: relative; flex: 1; max-width: 80px; aspect-ratio: 1 / 1; border: 2px solid var(--border-color); border-radius: 8px;
             display: flex; justify-content: center; align-items: center;
             font-size: clamp(1.2rem, 5vw, 2.5rem); font-weight: 700; text-transform: uppercase;
             transition: transform 0.6s, background-color 0.3s, border-color 0.3s;
             transform-style: preserve-3d;
+            height: 100%;
+        }
+        @media (max-height: 600px) {
+            .tile {
+                aspect-ratio: unset;
+            }
         }
         .tile::before { content: attr(data-ghost-letter); position: absolute; color: var(--text-color); opacity: 0.15; font-size: 1em; z-index: -1; }
         .tile.filled { border-color: #888; }
@@ -304,7 +330,7 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // Инициализация VK Bridge
-        vkBridge.send('VKWebAppInit');
+         vkBridge.send('VKWebAppInit');
 
         // --- СЛОВАРИ ---
         const wordsOne = {
@@ -364,6 +390,7 @@
         let wordLength = 5, secretWord = '', currentRow = 0, currentGuess = '', isGameOver = false, timerInterval, startTime, stats = {};
 
         // --- РЕКЛАМА ---
+        
         const showBannerAd = () => {
             vkBridge.send('VKWebAppShowBannerAd', {
                 banner_location: 'bottom'
@@ -389,6 +416,7 @@
                 if (callback) callback(); // Продолжаем игру даже если реклама не показалась
             });
         };
+        
 
         // --- ШИФРОВАНИЕ ---
         const RUS_TO_LATIN_MAP = { 'а': 'A', 'б': 'B', 'в': 'V', 'г': 'G', 'д': 'D', 'е': 'E', 'ё': 'XE', 'ж': 'J', 'з': 'Z', 'и': 'I', 'й': 'Y', 'к': 'K', 'л': 'L', 'м': 'M', 'н': 'N', 'о': 'O', 'п': 'P', 'р': 'R', 'с': 'S', 'т': 'T', 'у': 'U', 'ф': 'F', 'х': 'H', 'ц': 'C', 'ч': 'Q', 'ш': 'W', 'щ': 'XS', 'ъ': 'XH', 'ы': 'XI', 'ь': 'XB', 'э': 'XT', 'ю': 'XU', 'я': 'XA' };
@@ -454,7 +482,7 @@
         const addEventListeners = () => {
             elements.startGameBtn.addEventListener('click', () => { selectRandomWord(); startGame(); });
             elements.menuBtn.addEventListener('click', showMenu);
-            elements.hintBtn.addEventListener('click', () => showInterstitialAd(useHint));
+            elements.hintBtn.addEventListener('click', useHint); // Прямой вызов, без рекламы
             elements.checkWordBtn.addEventListener('click', submitGuess);
             elements.rulesBtn.addEventListener('click', () => elements.rulesModal.classList.add('visible'));
             elements.statsBtn.addEventListener('click', () => { displayStats(); elements.statsModal.classList.add('visible'); });
@@ -480,7 +508,7 @@
             elements.menuScreen.style.display = 'none';
             elements.gameScreen.style.display = 'flex';
             startTimer();
-            showBannerAd();
+            // showBannerAd(); // Реклама закомментирована
         };
 
         const selectRandomWord = () => { 
@@ -616,12 +644,12 @@
                 updateStats(true);
                 const tiles = getCurrentRowTiles();
                 tiles.forEach((tile, i) => setTimeout(() => tile.classList.add('win-dance'), i * 100));
-                setTimeout(() => showInterstitialAd(() => showEndGameModal(true)), wordLength * 100 + 500);
+                setTimeout(() => showEndGameModal(true), wordLength * 100 + 500); // Реклама убрана
             } else if (currentRow === 5) {
                 isGameOver = true;
                 clearInterval(timerInterval);
                 updateStats(false);
-                setTimeout(() => showInterstitialAd(() => showEndGameModal(false)), 500);
+                setTimeout(() => showEndGameModal(false), 500); // Реклама убрана
             } else {
                 currentRow++;
                 currentGuess = '';
