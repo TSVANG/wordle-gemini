@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Вордли - Русская версия</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- ОБЩИЕ СТИЛИ И ПЕРЕМЕННЫЕ --- */
+        :root {
+            --font-main: 'Inter', sans-serif;
+            
+            /* Светлая тема */
+            --bg-color-light: #f4f4f5;
+            --modal-bg-color-light: #ffffff;
+            --text-color-light: #18181b;
+            --border-color-light: #d4d4d8;
+            --key-bg-light: #d4d4d8;
+            --key-text-light: #18181b;
+            --shadow-light: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-inset-light: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+            /* Темная тема */
+            --bg-color-dark: #18181b;
+            --modal-bg-color-dark: #27272a;
+            --text-color-dark: #f4f4f5;
+            --border-color-dark: #52525b;
+            --key-bg-dark: #3f3f46;
+            --key-text-dark: #f4f4f5;
+            --shadow-dark: 0 4px 6px -1px rgb(255 255 255 / 0.05), 0 2px 4px -2px rgb(255 255 255 / 0.05);
+            --shadow-inset-dark: inset 0 2px 4px 0 rgb(255 255 255 / 0.02);
+
+            /* Цвета букв */
+            --color-correct: #538d4e;
+            --color-present: #b59f3b;
+            --color-absent: #3a3a3c;
+            --color-text-on-colored-bg: #ffffff;
+            --win-gold: #f59e0b;
+            --lose-red: #ef4444;
+
+            /* Переменные для текущей темы */
+            --bg-color: var(--bg-color-light);
+            --modal-bg-color: var(--modal-bg-color-light);
+            --text-color: var(--text-color-light);
+            --border-color: var(--border-color-light);
+            --key-bg: var(--key-bg-light);
+            --key-text: var(--key-text-light);
+            --shadow: var(--shadow-light);
+            --shadow-inset: var(--shadow-inset-light);
+        }
+
+        .dark-theme {
+            --bg-color: var(--bg-color-dark);
+            --modal-bg-color: var(--modal-bg-color-dark);
+            --text-color: var(--text-color-dark);
+            --border-color: var(--border-color-dark);
+            --key-bg: var(--key-bg-dark);
+            --key-text: var(--key-text-dark);
+            --shadow: var(--shadow-dark);
+            --shadow-inset: var(--shadow-inset-dark);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        html, body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 5px;
+            justify-content: center;
+        }
+
+        #game-screen {
+            justify-content: space-between;
+        }
+        
+        h1, h2, h3 { font-weight: 700; }
+        button, .button { font-family: var(--font-main); font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.1s ease, background-color 0.2s ease, box-shadow 0.2s ease; box-shadow: var(--shadow); background-color: var(--key-bg); color: var(--key-text); }
+        button:active, .button:active { transform: scale(0.96); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #menu-screen .title { font-size: clamp(2.5rem, 10vw, 3.5rem); margin-bottom: 40px; letter-spacing: 0.1em; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+        .menu-options { display: flex; flex-direction: column; gap: 15px; width: 90%; max-width: 320px; }
+        .menu-button { padding: 15px; font-size: 1.1rem; width: 100%; }
+        .difficulty-selector, .theme-switcher { display: flex; flex-direction: column; align-items: center; gap: 10px; background-color: var(--modal-bg-color); padding: 15px; border-radius: 12px; box-shadow: var(--shadow); width: 100%; }
+        .difficulty-buttons { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 400px; margin: 0 auto; }
+        .difficulty-btn { padding: 8px 12px; font-size: 0.9rem; flex-grow: 1; }
+        .difficulty-btn.active { background-color: var(--color-correct); color: var(--color-text-on-colored-bg); box-shadow: none; }
+        
+        .theme-switcher .theme-label { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1rem; }
+        .theme-switcher .theme-label span { font-size: 1.2rem; }
+
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #52525b; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        .game-header { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 500px; padding: 0 5px; flex-shrink: 0; }
+        .header-button { padding: 8px 12px; font-size: 0.9rem; }
+        #timer { font-size: 1.2rem; font-weight: 600; background: var(--modal-bg-color); padding: 8px 16px; border-radius: 8px; box-shadow: var(--shadow-inset); }
+
+        #grid-container {
+            flex-grow: 1;
+            flex-shrink: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+            width: 100%;
+            max-width: 500px;
+            margin: 10px auto;
+        }
+        .row { display: flex; justify-content: center; gap: 5px; }
+        .tile {
+            position: relative; flex: 1; max-width: 80px; aspect-ratio: 1 / 1; border: 2px solid var(--border-color); border-radius: 8px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: clamp(1.2rem, 5vw, 2.5rem); font-weight: 700; text-transform: uppercase;
+            transition: transform 0.6s, background-color 0.3s, border-color 0.3s;
+            transform-style: preserve-3d;
+        }
+        .tile::before { content: attr(data-ghost-letter); position: absolute; color: var(--text-color); opacity: 0.15; font-size: 1em; z-index: -1; }
+        .tile.filled { border-color: #888; }
+        .tile .front, .tile .back { position: absolute; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 6px; }
+        .tile .back { transform: rotateX(180deg); color: var(--color-text-on-colored-bg); }
+        .tile.flip { transform: rotateX(180deg); }
+        .tile.correct .back { background-color: var(--color-correct); border-color: var(--color-correct); }
+        .tile.present .back { background-color: var(--color-present); border-color: var(--color-present); }
+        .tile.absent .back { background-color: var(--color-absent); border-color: var(--color-absent); }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
+        .shake { animation: shake 0.5s ease-in-out; }
+        @keyframes win-dance { 0%, 100% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-10px) rotate(-2deg); } 75% { transform: translateY(5px) rotate(2deg); } }
+        .win-dance { animation: win-dance 0.5s ease-in-out; }
+
+        #keyboard-area { width: 100%; max-width: 500px; padding: 5px 0; flex-shrink: 0; }
+        #keyboard { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+        .keyboard-row { display: flex; justify-content: center; gap: 5px; }
+        .key { height: 50px; flex: 1; font-size: clamp(0.8rem, 2.5vw, 1rem); text-transform: uppercase; padding: 0 2px; }
+        .key.large { flex: 1.5; font-size: 1.2rem; }
+        .key.correct { background-color: var(--color-correct); color: var(--color-text-on-colored-bg); }
+        .key.present { background-color: var(--color-present); color: var(--color-text-on-colored-bg); }
+        .key.absent { background-color: var(--color-absent); color: var(--color-text-on-colored-bg); }
+        .game-actions { display: flex; gap: 10px; margin-bottom: 10px; width: 100%; }
+        .action-button { flex-grow: 1; padding: 15px; font-size: 1rem; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal { background-color: var(--modal-bg-color); padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; position: relative; transform: scale(0.95); transition: transform 0.3s ease; }
+        .modal-overlay.visible .modal { transform: scale(1); }
+        .modal-close-btn { position: absolute; top: 15px; right: 15px; width: 30px; height: 30px; font-size: 1.5rem; line-height: 30px; text-align: center; background: none; box-shadow: none; color: var(--text-color); opacity: 0.7; }
+        .modal-close-btn:hover { opacity: 1; }
+        .modal h2 { margin-bottom: 20px; text-align: center; }
+        .modal p { margin-bottom: 15px; line-height: 1.6; }
+        .example-grid { display: flex; gap: 5px; margin-bottom: 10px; }
+        .example-tile { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; font-weight: 700; font-size: 1.5rem; border-radius: 6px; color: var(--color-text-on-colored-bg); border: 2px solid; }
+        #stats-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 20px; text-align: center; }
+        .stat-item { background-color: var(--bg-color); padding: 15px; border-radius: 12px; box-shadow: var(--shadow-inset); }
+        .stat-item h3 { font-size: 1rem; margin-bottom: 5px; opacity: 0.8; }
+        .stat-item p { font-size: 1.5rem; font-weight: 700; margin: 0; }
+        .stat-item .subtext { font-size: 0.8rem; opacity: 0.7; }
+
+        .share-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); }
+        #friend-code-input, #user-word-input, #generated-code-output { display: block; width: 100%; padding: 10px; margin: 10px 0; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-color); color: var(--text-color); font-family: monospace; font-size: 1rem; word-wrap: break-word; text-align: center; text-transform: lowercase; }
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .toast { background-color: var(--text-color); color: var(--bg-color); padding: 12px 20px; border-radius: 8px; font-weight: 600; box-shadow: var(--shadow); opacity: 0; transform: translateY(-20px); transition: opacity 0.3s ease, transform 0.3s ease; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        
+        #end-game-modal .modal { text-align: center; }
+        #end-game-modal .result-icon { font-size: 4rem; line-height: 1; margin-bottom: 15px; }
+        #end-game-modal .result-icon.win { color: var(--win-gold); }
+        #end-game-modal .result-icon.lose { color: var(--lose-red); }
+        #end-game-modal .result-word { font-size: 1.5rem; font-weight: bold; margin: 10px 0 20px; letter-spacing: 2px; text-transform: uppercase; padding: 10px; background-color: var(--bg-color); border-radius: 8px; }
+        #end-game-modal .modal-actions { display: flex; gap: 15px; margin-top: 20px; }
+        #end-game-modal .modal-actions .button { flex-grow: 1; padding: 15px; font-size: 1rem; }
+        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+
+        @media (min-width: 768px) {
+            #grid-container, #keyboard-area {
+                max-width: 640px;
+            }
+            .key {
+                height: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="confetti-canvas"></canvas>
+    <div id="toast-container"></div>
+
+    <!-- ЭКРАН МЕНЮ -->
+    <div id="menu-screen" class="screen">
+        <h1 class="title">ВОРДЛИ</h1>
+        <div class="menu-options">
+            <div class="difficulty-selector">
+                <label>Длина слова</label>
+                <div id="difficulty-buttons" class="difficulty-buttons"></div>
+            </div>
+            <button id="start-game-btn" class="menu-button">Начать игру</button>
+            <button id="friend-game-btn" class="menu-button">Игра с другом</button>
+            <button id="rules-btn" class="menu-button">Правила</button>
+            <button id="stats-btn" class="menu-button">Статистика</button>
+            <div class="theme-switcher">
+                <label class="theme-label"><span>☀️</span>Тема<span>🌙</span></label>
+                <label class="switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ИГРЫ -->
+    <div id="game-screen" class="screen">
+        <div class="game-header">
+            <button id="menu-btn" class="header-button">Меню</button>
+            <div id="timer">00:00</div>
+            <div style="width: 70px;"></div> <!-- Распорка -->
+        </div>
+        <div id="grid-container"></div>
+        <div id="keyboard-area">
+            <div class="game-actions">
+                <button id="hint-btn" class="action-button">Подсказка</button>
+                <button id="check-word-btn" class="action-button">Проверить</button>
+            </div>
+            <div id="keyboard"></div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНЫЕ ОКНА -->
+    <div id="rules-modal" class="modal-overlay">
+        <div class="modal">
+            <button class="modal-close-btn">&times;</button>
+            <h2>Правила игры</h2>
+            <p>Ваша задача - угадать загаданное слово за 6 попыток. После каждой попытки цвет плиток изменится, чтобы показать, насколько вы были близки.</p>
+            <div class="example-grid"><div class="example-tile" style="background-color: var(--color-correct); border-color: var(--color-correct);">П</div></div><p>Буква <strong>П</strong> есть в слове и стоит на правильном месте.</p>
+            <div class="example-grid"><div class="example-tile" style="background-color: var(--color-present); border-color: var(--color-present);">О</div></div><p>Буква <strong>О</strong> есть в слове, но стоит в другом месте.</p>
+            <div class="example-grid"><div class="example-tile" style="background-color: var(--color-absent); border-color: var(--color-absent);">Р</div></div><p>Буквы <strong>Р</strong> нет в загаданном слове.</p>
+            <p>Правильно угаданные буквы будут подсвечиваться на поле в следующих попытках.</p>
+        </div>
+    </div>
+
+    <div id="stats-modal" class="modal-overlay"><div class="modal"><button class="modal-close-btn">&times;</button><h2>Статистика</h2><div id="stats-content"></div></div></div>
+    
+    <div id="friend-game-modal" class="modal-overlay">
+        <div class="modal">
+            <button class="modal-close-btn">&times;</button>
+            <h2>Игра с другом</h2>
+            <p>Введите код от друга, чтобы угадать его слово.</p>
+            <input type="text" id="friend-code-input" placeholder="Вставьте код сюда">
+            <button id="play-with-code-btn" class="action-button" style="width: 100%;">Играть по коду</button>
+            <div class="share-section">
+                <p>Или введите своё слово, чтобы сгенерировать код для друга.</p>
+                <input type="text" id="user-word-input" placeholder="Введите слово здесь">
+                <button id="generate-code-btn" class="action-button" style="width: 100%;">Создать код и скопировать</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="end-game-modal" class="modal-overlay">
+        <div class="modal">
+            <div id="end-game-icon" class="result-icon"></div>
+            <h2 id="end-game-title"></h2>
+            <p id="end-game-subtitle"></p>
+            <div class="result-word" id="end-game-word"></div>
+            <div class="modal-actions">
+                <button id="restart-btn" class="button">Начать заново</button>
+                <button id="back-to-menu-btn" class="button">Выход в меню</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- СЛОВАРИ ---
+        const wordsOne = {
+            4: ["БАБА", "БАЗА", "БАНК", "БЕДА"],
+            5: ["ССССС","СЛОВО", "СЛИВА"],
+            6: ["АБАЖУР", "АБСУРД", "АВАРИЯ", "АВАРКА", "АВГУСТ"],
+            7: ["АВТОБУС", "АВТОМАТ", "АППАРАТ", "БАБУШКА"],
+            8: ["АКАДЕМИЯ", "БОЛЬНИЦА", "ВЕЛИЧИНА", "ВЕЩЕСТВО"],
+            9: ["АТМОСФЕРА", "ВЫРАЖЕНИЕ", "ГОСТИНИЦА", "ГРАЖДАНИН"],
+            10: ["АВТОМОБИЛЬ", "АКТИВНОСТЬ", "АМЕРИКАНЕЦ", "БИБЛИОТЕКА"],
+            11: ["БОЛЬШИНСТВО", "ВОЗВРАЩЕНИЕ", "ВОЗДЕЙСТВИЕ"]
+        };
+
+        const words = {
+            4: [...wordsOne[4]],
+            5: [...wordsOne[5], "АВАНС"],
+            6: [...wordsOne[6]],
+            7: [...wordsOne[7]],
+            8: [...wordsOne[8]],
+            9: [...wordsOne[9]],
+            10: [...wordsOne[10]],
+            11: [...wordsOne[11]]
+        };
+        const ALL_VALID_WORDS = new Set(Object.values(words).flat().map(w => w.toLowerCase()));
+
+
+        // --- DOM ЭЛЕМЕНТЫ ---
+        const elements = {
+            menuScreen: document.getElementById('menu-screen'),
+            gameScreen: document.getElementById('game-screen'),
+            difficultyButtonsContainer: document.getElementById('difficulty-buttons'),
+            startGameBtn: document.getElementById('start-game-btn'),
+            themeToggle: document.getElementById('theme-toggle'),
+            gridContainer: document.getElementById('grid-container'),
+            keyboardContainer: document.getElementById('keyboard'),
+            timerEl: document.getElementById('timer'),
+            menuBtn: document.getElementById('menu-btn'),
+            hintBtn: document.getElementById('hint-btn'),
+            checkWordBtn: document.getElementById('check-word-btn'),
+            rulesBtn: document.getElementById('rules-btn'),
+            statsBtn: document.getElementById('stats-btn'),
+            friendGameBtn: document.getElementById('friend-game-btn'),
+            rulesModal: document.getElementById('rules-modal'),
+            statsModal: document.getElementById('stats-modal'),
+            friendGameModal: document.getElementById('friend-game-modal'),
+            endGameModal: document.getElementById('end-game-modal'),
+            friendCodeInput: document.getElementById('friend-code-input'),
+            userWordInput: document.getElementById('user-word-input'),
+            playWithCodeBtn: document.getElementById('play-with-code-btn'),
+            generateCodeBtn: document.getElementById('generate-code-btn'),
+            restartBtn: document.getElementById('restart-btn'),
+            backToMenuBtn: document.getElementById('back-to-menu-btn'),
+            confettiCanvas: document.getElementById('confetti-canvas')
+        };
+        
+        // --- ИГРОВОЕ СОСТОЯНИЕ ---
+        let wordLength = 5, secretWord = '', currentRow = 0, currentGuess = '', isGameOver = false, timerInterval, startTime, stats = {};
+
+        // --- ШИФРОВАНИЕ ---
+        const RUS_TO_LATIN_MAP = { 'а': 'A', 'б': 'B', 'в': 'V', 'г': 'G', 'д': 'D', 'е': 'E', 'ё': 'XE', 'ж': 'J', 'з': 'Z', 'и': 'I', 'й': 'Y', 'к': 'K', 'л': 'L', 'м': 'M', 'н': 'N', 'о': 'O', 'п': 'P', 'р': 'R', 'с': 'S', 'т': 'T', 'у': 'U', 'ф': 'F', 'х': 'H', 'ц': 'C', 'ч': 'Q', 'ш': 'W', 'щ': 'XS', 'ъ': 'XH', 'ы': 'XI', 'ь': 'XB', 'э': 'XT', 'ю': 'XU', 'я': 'XA' };
+        const LATIN_TO_RUS_MAP = Object.fromEntries(Object.entries(RUS_TO_LATIN_MAP).map(([k, v]) => [v, k]));
+        const RUS_ALPHABET = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
+        const CAESAR_SHIFT = 1;
+
+        const encode = (str) => {
+            const shifted = str.toLowerCase().split('').map(char => {
+                const index = RUS_ALPHABET.indexOf(char);
+                if (index > -1) {
+                    const newIndex = (index + CAESAR_SHIFT) % RUS_ALPHABET.length;
+                    return RUS_ALPHABET[newIndex];
+                }
+                return char;
+            }).join('');
+            
+            return shifted.split('').map(char => RUS_TO_LATIN_MAP[char] || '').join('');
+        };
+
+        const decode = (cipher) => {
+            let cyrillic = '';
+            let i = 0;
+            const upperCipher = cipher.toUpperCase();
+            while (i < upperCipher.length) {
+                if (upperCipher[i] === 'X' && i + 1 < upperCipher.length) {
+                    const combo = upperCipher.substring(i, i + 2);
+                    if (LATIN_TO_RUS_MAP[combo]) {
+                        cyrillic += LATIN_TO_RUS_MAP[combo];
+                        i += 2;
+                        continue;
+                    }
+                }
+                const single = upperCipher.substring(i, i + 1);
+                cyrillic += LATIN_TO_RUS_MAP[single] || '?';
+                i += 1;
+            }
+
+            return cyrillic.split('').map(char => {
+                const index = RUS_ALPHABET.indexOf(char);
+                if (index > -1) {
+                    let newIndex = index - CAESAR_SHIFT;
+                    if (newIndex < 0) {
+                        newIndex = RUS_ALPHABET.length + newIndex;
+                    }
+                    return RUS_ALPHABET[newIndex];
+                }
+                return char;
+            }).join('');
+        };
+
+
+        // --- ИНИЦИАЛИЗАЦИЯ ---
+        const init = () => {
+            loadStats();
+            initTheme();
+            setupDifficultyButtons();
+            setActiveDifficultyButton();
+            addEventListeners();
+            document.addEventListener('contextmenu', e => e.preventDefault());
+        };
+
+        const addEventListeners = () => {
+            elements.startGameBtn.addEventListener('click', () => { selectRandomWord(); startGame(); });
+            elements.menuBtn.addEventListener('click', showMenu);
+            elements.hintBtn.addEventListener('click', useHint);
+            elements.checkWordBtn.addEventListener('click', submitGuess);
+            elements.rulesBtn.addEventListener('click', () => elements.rulesModal.classList.add('visible'));
+            elements.statsBtn.addEventListener('click', () => { displayStats(); elements.statsModal.classList.add('visible'); });
+            elements.friendGameBtn.addEventListener('click', () => elements.friendGameModal.classList.add('visible'));
+            elements.playWithCodeBtn.addEventListener('click', playWithFriendCode);
+            elements.generateCodeBtn.addEventListener('click', generateUserCode);
+            elements.themeToggle.addEventListener('change', toggleTheme);
+            document.addEventListener('keydown', handleKeyPress);
+            elements.restartBtn.addEventListener('click', () => { elements.endGameModal.classList.remove('visible'); selectRandomWord(); startGame(); });
+            elements.backToMenuBtn.addEventListener('click', () => { elements.endGameModal.classList.remove('visible'); showMenu(); });
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.addEventListener('click', e => { if (e.target === modal || e.target.classList.contains('modal-close-btn')) modal.classList.remove('visible'); });
+            });
+        };
+
+        // --- ОСНОВНЫЕ ФУНКЦИИ ИГРЫ ---
+        const startGame = () => {
+            isGameOver = false;
+            currentRow = 0;
+            currentGuess = '';
+            setupGrid();
+            setupKeyboard();
+            elements.menuScreen.style.display = 'none';
+            elements.gameScreen.style.display = 'flex';
+            startTimer();
+        };
+
+        const selectRandomWord = () => { 
+            secretWord = wordsOne[wordLength][Math.floor(Math.random() * wordsOne[wordLength].length)].toLowerCase(); 
+        };
+        const showMenu = () => { clearInterval(timerInterval); elements.gameScreen.style.display = 'none'; elements.menuScreen.style.display = 'flex'; };
+
+        const setupGrid = () => {
+            elements.gridContainer.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.classList.add('row');
+                for (let j = 0; j < wordLength; j++) {
+                    const tile = document.createElement('div');
+                    tile.classList.add('tile');
+                    const front = document.createElement('div');
+                    front.classList.add('front');
+                    const back = document.createElement('div');
+                    back.classList.add('back');
+                    tile.appendChild(front);
+                    tile.appendChild(back);
+                    rowDiv.appendChild(tile);
+                }
+                elements.gridContainer.appendChild(rowDiv);
+            }
+        };
+
+        const setupKeyboard = () => {
+            elements.keyboardContainer.innerHTML = '';
+            const layout = ['йцукенгшщзх', 'фывапролджэ', 'ячсмитьбю.'];
+            layout.forEach(row => {
+                const rowDiv = document.createElement('div');
+                rowDiv.classList.add('keyboard-row');
+                row.split('').forEach(char => {
+                    const key = document.createElement('button');
+                    key.classList.add('key');
+                    if (char === '.') {
+                        key.classList.add('large');
+                        key.innerHTML = '&#9003;';
+                        key.dataset.key = 'backspace';
+                    } else {
+                        key.textContent = char;
+                        key.dataset.key = char;
+                    }
+                    key.addEventListener('click', () => handleKeyPress({ key: key.dataset.key }));
+                    rowDiv.appendChild(key);
+                });
+                elements.keyboardContainer.appendChild(rowDiv);
+            });
+        };
+        
+        const handleKeyPress = e => {
+            if (isGameOver || document.querySelector('.modal-overlay.visible')) return;
+            const key = e.key.toLowerCase();
+            if (key === 'enter') {
+                e.preventDefault(); 
+                submitGuess();
+            }
+            else if (key === 'backspace' || key === 'delete') deleteLetter();
+            else if (/^[а-яё]$/.test(key)) addLetter(key);
+        };
+
+        const addLetter = letter => {
+            if (currentGuess.length < wordLength) {
+                currentGuess += letter;
+                updateCurrentRow();
+            }
+        };
+
+        const deleteLetter = () => {
+            if (currentGuess.length > 0) {
+                currentGuess = currentGuess.slice(0, -1);
+                updateCurrentRow();
+            }
+        };
+
+        const updateCurrentRow = () => {
+            const tiles = getCurrentRowTiles();
+            tiles.forEach((tile, i) => {
+                const letter = currentGuess[i] || '';
+                tile.querySelector('.front').textContent = letter;
+                tile.classList.toggle('filled', !!letter);
+            });
+        };
+
+        const submitGuess = () => {
+            if (isGameOver) return;
+            if (currentGuess.length !== wordLength) { showToast(`Слово должно состоять из ${wordLength} букв`); shakeRow(); return; }
+            if (!ALL_VALID_WORDS.has(currentGuess)) { showToast("Такого слова нет в словаре"); shakeRow(); return; }
+
+            const tiles = getCurrentRowTiles();
+            const guessChars = currentGuess.split('');
+            const secretChars = secretWord.split('');
+            const keyStatus = {};
+
+            guessChars.forEach((char, i) => {
+                if (char === secretChars[i]) {
+                    tiles[i].classList.add('correct');
+                    keyStatus[char] = 'correct';
+                    secretChars[i] = null;
+                }
+            });
+            guessChars.forEach((char, i) => {
+                if (!tiles[i].classList.contains('correct')) {
+                    if (secretChars.includes(char)) {
+                        tiles[i].classList.add('present');
+                        if (keyStatus[char] !== 'correct') keyStatus[char] = 'present';
+                        secretChars[secretChars.indexOf(char)] = null;
+                    } else {
+                        tiles[i].classList.add('absent');
+                        if (!keyStatus[char]) keyStatus[char] = 'absent';
+                    }
+                }
+            });
+
+            tiles.forEach((tile, i) => {
+                const front = tile.querySelector('.front');
+                const back = tile.querySelector('.back');
+                back.textContent = front.textContent;
+                setTimeout(() => tile.classList.add('flip'), i * 200);
+            });
+            
+            setTimeout(() => {
+                updateKeyboard(keyStatus);
+                checkGameStatus();
+            }, wordLength * 200);
+        };
+
+        const checkGameStatus = () => {
+            if (currentGuess === secretWord) {
+                isGameOver = true;
+                clearInterval(timerInterval);
+                updateStats(true);
+                const tiles = getCurrentRowTiles();
+                tiles.forEach((tile, i) => setTimeout(() => tile.classList.add('win-dance'), i * 100));
+                setTimeout(() => showEndGameModal(true), wordLength * 100 + 500);
+            } else if (currentRow === 5) {
+                isGameOver = true;
+                clearInterval(timerInterval);
+                updateStats(false);
+                setTimeout(() => showEndGameModal(false), 500);
+            } else {
+                currentRow++;
+                currentGuess = '';
+                markCorrectPositions();
+            }
+        };
+        
+        const markCorrectPositions = () => {
+            const correctLetters = {}; // Stores { index: letter }
+            for (let r = 0; r < currentRow; r++) {
+                const completedRowTiles = getRowTiles(r);
+                completedRowTiles.forEach((tile, i) => {
+                    if (tile.classList.contains('correct')) {
+                        correctLetters[i] = secretWord[i];
+                    }
+                });
+            }
+
+            const currentRowTiles = getCurrentRowTiles();
+            if (!currentRowTiles.length) return;
+
+            currentRowTiles.forEach((tile, i) => {
+                tile.dataset.ghostLetter = correctLetters[i] ? correctLetters[i].toUpperCase() : '';
+            });
+        };
+
+        const useHint = () => {
+            if (isGameOver) return;
+
+            const correctLetters = {};
+            for (let r = 0; r < currentRow; r++) {
+                getRowTiles(r).forEach((tile, i) => {
+                    if (tile.classList.contains('correct')) {
+                        correctLetters[i] = secretWord[i];
+                    }
+                });
+            }
+
+            let hintIndex = -1;
+            for (let i = 0; i < wordLength; i++) {
+                if (correctLetters[i] === undefined && currentGuess[i] !== secretWord[i]) {
+                    hintIndex = i;
+                    break;
+                }
+            }
+
+            if (hintIndex === -1) {
+                 for (let i = 0; i < wordLength; i++) {
+                     if (currentGuess[i] !== secretWord[i]) {
+                         hintIndex = i;
+                         break;
+                     }
+                }
+            }
+
+            if (hintIndex !== -1) {
+                let guessArray = currentGuess.padEnd(wordLength, ' ').split('');
+                guessArray[hintIndex] = secretWord[hintIndex];
+                currentGuess = guessArray.join('').trimEnd();
+                updateCurrentRow();
+            } else {
+                showToast("Все буквы уже угаданы!");
+            }
+        };
+        
+        const updateKeyboard = keyStatus => {
+            for (const [key, status] of Object.entries(keyStatus)) {
+                const keyEl = elements.keyboardContainer.querySelector(`[data-key="${key}"]`);
+                if (keyEl) {
+                    if (keyEl.classList.contains('correct')) continue;
+                    if (keyEl.classList.contains('present') && status === 'absent') continue;
+                    keyEl.classList.remove('present', 'absent');
+                    keyEl.classList.add(status);
+                }
+            }
+        };
+
+        const shakeRow = () => { const rowDiv = elements.gridContainer.children[currentRow]; if(rowDiv) { rowDiv.classList.add('shake'); setTimeout(() => rowDiv.classList.remove('shake'), 500); } };
+        const getCurrentRowTiles = () => getRowTiles(currentRow);
+        const getRowTiles = row => { const rowEl = elements.gridContainer.children[row]; return rowEl ? Array.from(rowEl.children) : []; };
+        const showToast = (message, duration = 3000) => {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, duration);
+        };
+
+        // --- ТАЙМЕР ---
+        const startTimer = () => { clearInterval(timerInterval); startTime = Date.now(); timerInterval = setInterval(updateTimer, 1000); updateTimer(); };
+        const updateTimer = () => { if (isGameOver) { clearInterval(timerInterval); return; } const elapsed = Math.floor((Date.now() - startTime) / 1000); const minutes = String(Math.floor(elapsed / 60)).padStart(2, '0'); const seconds = String(elapsed % 60).padStart(2, '0'); elements.timerEl.textContent = `${minutes}:${seconds}`; };
+        const getElapsedTime = () => Math.floor((Date.now() - startTime) / 1000);
+
+        // --- НАСТРОЙКИ, СТАТИСТИКА, ИГРА С ДРУГОМ ---
+        const initTheme = () => { if (localStorage.getItem('wordleTheme') === 'dark') { elements.themeToggle.checked = true; document.body.classList.add('dark-theme'); } };
+        const toggleTheme = () => { document.body.classList.toggle('dark-theme'); localStorage.setItem('wordleTheme', document.body.classList.contains('dark-theme') ? 'dark' : 'light'); };
+        const setupDifficultyButtons = () => { elements.difficultyButtonsContainer.innerHTML = ''; for (let i = 4; i <= 11; i++) { if(wordsOne[i] && wordsOne[i].length > 0) { const btn = document.createElement('button'); btn.className = 'difficulty-btn'; btn.textContent = i; btn.dataset.length = i; btn.addEventListener('click', () => { wordLength = i; setActiveDifficultyButton(); }); elements.difficultyButtonsContainer.appendChild(btn); } } };
+        const setActiveDifficultyButton = () => document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.length) === wordLength));
+        const loadStats = () => { stats = JSON.parse(localStorage.getItem('wordleStats')) || {}; for (let i = 4; i <= 11; i++) if (!stats[i]) stats[i] = { played: 0, wins: 0, bestTime: null, currentStreak: 0, maxStreak: 0 }; };
+        const saveStats = () => localStorage.setItem('wordleStats', JSON.stringify(stats));
+        const updateStats = isWin => { const s = stats[wordLength]; s.played++; if (isWin) { s.wins++; s.currentStreak++; if (s.currentStreak > s.maxStreak) s.maxStreak = s.currentStreak; const time = getElapsedTime(); if (s.bestTime === null || time < s.bestTime) s.bestTime = time; } else { s.currentStreak = 0; } saveStats(); };
+        const displayStats = () => { const content = document.getElementById('stats-content'); content.innerHTML = ''; let hasStats = false; for (let i = 4; i <= 11; i++) { const s = stats[i]; if (s.played > 0) { hasStats = true; const winRate = Math.round((s.wins / s.played) * 100); const bestTimeFormatted = s.bestTime !== null ? `${String(Math.floor(s.bestTime / 60)).padStart(2, '0')}:${String(s.bestTime % 60).padStart(2, '0')}` : '–'; const catDiv = document.createElement('div'); catDiv.innerHTML = `<h3>${i} букв</h3><div class="stat-item"><p>${s.played}</p><span class="subtext">Сыграно</span></div><div class="stat-item"><p>${winRate}%</p><span class="subtext">Побед</span></div><div class="stat-item"><p>${bestTimeFormatted}</p><span class="subtext">Лучшее время</span></div><div class="stat-item"><p>${s.maxStreak}</p><span class="subtext">Макс. серия</span></div>`; content.appendChild(catDiv); } } if (!hasStats) content.innerHTML = '<p>Вы еще не сыграли ни одной игры.</p>'; };
+        
+        const generateUserCode = () => {
+            const word = elements.userWordInput.value.toLowerCase().trim();
+            if (word.length === 0) { showToast("Введите слово."); return; }
+            if (!ALL_VALID_WORDS.has(word)) { showToast(`Слова "${word}" нет в словаре.`); return; }
+            const encoded = encode(word);
+            if (encoded) {
+                navigator.clipboard.writeText(encoded).then(() => showToast('Код создан и скопирован!'));
+            } else {
+                showToast('Ошибка кодирования.');
+            }
+        };
+
+        const playWithFriendCode = () => {
+            const code = elements.friendCodeInput.value.trim();
+            if (!code) { showToast("Введите код."); return; }
+            const decodedWord = decode(code);
+            if (decodedWord && !decodedWord.includes('?') && ALL_VALID_WORDS.has(decodedWord)) {
+                const len = decodedWord.length;
+                secretWord = decodedWord;
+                wordLength = len;
+                setActiveDifficultyButton();
+                elements.friendGameModal.classList.remove('visible');
+                elements.friendCodeInput.value = '';
+                startGame();
+            } else { showToast("Ошибка в коде или такого слова нет."); }
+        };
+        
+        // --- ФИНАЛЬНОЕ ОКНО И КОНФЕТТИ ---
+        const showEndGameModal = isWin => {
+            const icon = document.getElementById('end-game-icon');
+            const title = document.getElementById('end-game-title');
+            const subtitle = document.getElementById('end-game-subtitle');
+            const wordEl = document.getElementById('end-game-word');
+            
+            icon.innerHTML = isWin ? '🏆' : '😔';
+            icon.className = `result-icon ${isWin ? 'win' : 'lose'}`;
+            title.textContent = isWin ? "Поздравляем! Вы победили!" : "Вы проиграли";
+            subtitle.textContent = isWin ? `Слово угадано за ${getElapsedTime()} сек.` : "В следующий раз точно получится!";
+            wordEl.textContent = secretWord.toUpperCase();
+            elements.endGameModal.classList.add('visible');
+            if(isWin) triggerConfetti();
+        };
+        
+        const triggerConfetti = () => {
+            const canvas = elements.confettiCanvas;
+            const ctx = canvas.getContext('2d');
+            let confetti = [];
+            const confettiCount = 200;
+            const gravity = 0.5;
+            const terminalVelocity = 5;
+            const drag = 0.075;
+            const colors = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6'];
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            for (let i = 0; i < confettiCount; i++) {
+                confetti.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2 - Math.random() * canvas.height / 2,
+                    w: 10, h: 20,
+                    vx: (Math.random() * 2 - 1) * 10,
+                    vy: (Math.random() * -1 - 1) * 10,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    angle: Math.random() * Math.PI * 2,
+                    dAngle: (Math.random() * 2 - 1) * 0.1
+                });
+            }
+
+            const update = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                confetti.forEach(c => {
+                    c.vy += gravity;
+                    c.vx *= (1 - drag);
+                    c.x += c.vx;
+                    c.y += c.vy;
+                    c.angle += c.dAngle;
+                    ctx.save();
+                    ctx.translate(c.x, c.y);
+                    ctx.rotate(c.angle);
+                    ctx.fillStyle = c.color;
+                    ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+                    ctx.restore();
+                });
+                confetti = confetti.filter(c => c.y < canvas.height + 20);
+                if (confetti.length > 0) {
+                    requestAnimationFrame(update);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            };
+            requestAnimationFrame(update);
+        };
+
+        init();
+    });
+    </script>
+</body>
+</html>
