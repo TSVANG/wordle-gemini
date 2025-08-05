@@ -7,8 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    
-     <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script> 
+    <!-- VK Bridge SDK -->
+    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
     <style>
         /* --- ОБЩИЕ СТИЛИ И ПЕРЕМЕННЫЕ --- */
         :root {
@@ -330,7 +330,7 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // Инициализация VK Bridge
-         vkBridge.send('VKWebAppInit');
+        vkBridge.send('VKWebAppInit');
 
         // --- СЛОВАРИ ---
         const wordsOne = {
@@ -482,7 +482,7 @@
         const addEventListeners = () => {
             elements.startGameBtn.addEventListener('click', () => { selectRandomWord(); startGame(); });
             elements.menuBtn.addEventListener('click', showMenu);
-            elements.hintBtn.addEventListener('click', useHint); // Прямой вызов, без рекламы
+            elements.hintBtn.addEventListener('click', () => showInterstitialAd(useHint));
             elements.checkWordBtn.addEventListener('click', submitGuess);
             elements.rulesBtn.addEventListener('click', () => elements.rulesModal.classList.add('visible'));
             elements.statsBtn.addEventListener('click', () => { displayStats(); elements.statsModal.classList.add('visible'); });
@@ -508,7 +508,7 @@
             elements.menuScreen.style.display = 'none';
             elements.gameScreen.style.display = 'flex';
             startTimer();
-            // showBannerAd(); // Реклама закомментирована
+            showBannerAd();
         };
 
         const selectRandomWord = () => { 
@@ -644,12 +644,12 @@
                 updateStats(true);
                 const tiles = getCurrentRowTiles();
                 tiles.forEach((tile, i) => setTimeout(() => tile.classList.add('win-dance'), i * 100));
-                setTimeout(() => showEndGameModal(true), wordLength * 100 + 500); // Реклама убрана
+                setTimeout(() => showInterstitialAd(() => showEndGameModal(true)), wordLength * 100 + 500);
             } else if (currentRow === 5) {
                 isGameOver = true;
                 clearInterval(timerInterval);
                 updateStats(false);
-                setTimeout(() => showEndGameModal(false), 500); // Реклама убрана
+                setTimeout(() => showInterstitialAd(() => showEndGameModal(false)), 500);
             } else {
                 currentRow++;
                 currentGuess = '';
