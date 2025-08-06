@@ -84,7 +84,7 @@
             flex-direction: column;
             align-items: center;
             padding: 10px 5px;
-            overflow-y: auto; /* Добавлено для прокрутки на очень маленьких экранах */
+            overflow-y: auto; 
         }
 
         #menu-screen {
@@ -328,7 +328,7 @@
     </div>
 
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         // Инициализация VK Bridge
         vkBridge.send('VKWebAppInit');
 
@@ -390,7 +390,6 @@
         let wordLength = 5, secretWord = '', currentRow = 0, currentGuess = '', isGameOver = false, timerInterval, startTime, stats = {};
 
         // --- РЕКЛАМА ---
-        
         const showBannerAd = () => {
             vkBridge.send('VKWebAppShowBannerAd', {
                 banner_location: 'bottom'
@@ -413,11 +412,10 @@
                 if (callback) callback();
             }).catch(error => {
                 console.log('Ошибка показа полноэкранной рекламы:', error);
-                if (callback) callback(); // Продолжаем игру даже если реклама не показалась
+                if (callback) callback();
             });
         };
         
-
         // --- ШИФРОВАНИЕ ---
         const RUS_TO_LATIN_MAP = { 'а': 'A', 'б': 'B', 'в': 'V', 'г': 'G', 'д': 'D', 'е': 'E', 'ё': 'XE', 'ж': 'J', 'з': 'Z', 'и': 'I', 'й': 'Y', 'к': 'K', 'л': 'L', 'м': 'M', 'н': 'N', 'о': 'O', 'п': 'P', 'р': 'R', 'с': 'S', 'т': 'T', 'у': 'U', 'ф': 'F', 'х': 'H', 'ц': 'C', 'ч': 'Q', 'ш': 'W', 'щ': 'XS', 'ъ': 'XH', 'ы': 'XI', 'ь': 'XB', 'э': 'XT', 'ю': 'XU', 'я': 'XA' };
         const LATIN_TO_RUS_MAP = Object.fromEntries(Object.entries(RUS_TO_LATIN_MAP).map(([k, v]) => [v, k]));
@@ -470,8 +468,8 @@
 
 
         // --- ИНИЦИАЛИЗАЦИЯ ---
-        const init = () => {
-            loadStats();
+        const init = async () => {
+            await loadStats();
             initTheme();
             setupDifficultyButtons();
             setActiveDifficultyButton();
@@ -491,8 +489,20 @@
             elements.generateCodeBtn.addEventListener('click', generateUserCode);
             elements.themeToggle.addEventListener('change', toggleTheme);
             document.addEventListener('keydown', handleKeyPress);
-            elements.restartBtn.addEventListener('click', () => { elements.endGameModal.classList.remove('visible'); selectRandomWord(); startGame(); });
-            elements.backToMenuBtn.addEventListener('click', () => { elements.endGameModal.classList.remove('visible'); showMenu(); });
+            
+            const restartAction = () => {
+                elements.endGameModal.classList.remove('visible');
+                selectRandomWord();
+                startGame();
+            };
+            const backToMenuAction = () => {
+                elements.endGameModal.classList.remove('visible');
+                showMenu();
+            };
+
+            elements.restartBtn.addEventListener('click', () => showInterstitialAd(restartAction));
+            elements.backToMenuBtn.addEventListener('click', () => showInterstitialAd(backToMenuAction));
+            
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.addEventListener('click', e => { if (e.target === modal || e.target.classList.contains('modal-close-btn')) modal.classList.remove('visible'); });
             });
@@ -644,12 +654,12 @@
                 updateStats(true);
                 const tiles = getCurrentRowTiles();
                 tiles.forEach((tile, i) => setTimeout(() => tile.classList.add('win-dance'), i * 100));
-                setTimeout(() => showInterstitialAd(() => showEndGameModal(true)), wordLength * 100 + 500);
+                setTimeout(() => showEndGameModal(true), wordLength * 100 + 500);
             } else if (currentRow === 5) {
                 isGameOver = true;
                 clearInterval(timerInterval);
                 updateStats(false);
-                setTimeout(() => showInterstitialAd(() => showEndGameModal(false)), 500);
+                setTimeout(() => showEndGameModal(false), 500);
             } else {
                 currentRow++;
                 currentGuess = '';
@@ -749,9 +759,52 @@
         const toggleTheme = () => { document.body.classList.toggle('dark-theme'); localStorage.setItem('wordleTheme', document.body.classList.contains('dark-theme') ? 'dark' : 'light'); };
         const setupDifficultyButtons = () => { elements.difficultyButtonsContainer.innerHTML = ''; for (let i = 4; i <= 11; i++) { if(wordsOne[i] && wordsOne[i].length > 0) { const btn = document.createElement('button'); btn.className = 'difficulty-btn'; btn.textContent = i; btn.dataset.length = i; btn.addEventListener('click', () => { wordLength = i; setActiveDifficultyButton(); }); elements.difficultyButtonsContainer.appendChild(btn); } } };
         const setActiveDifficultyButton = () => document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.length) === wordLength));
-        const loadStats = () => { stats = JSON.parse(localStorage.getItem('wordleStats')) || {}; for (let i = 4; i <= 11; i++) if (!stats[i]) stats[i] = { played: 0, wins: 0, bestTime: null, currentStreak: 0, maxStreak: 0 }; };
-        const saveStats = () => localStorage.setItem('wordleStats', JSON.stringify(stats));
-        const updateStats = isWin => { const s = stats[wordLength]; s.played++; if (isWin) { s.wins++; s.currentStreak++; if (s.currentStreak > s.maxStreak) s.maxStreak = s.currentStreak; const time = getElapsedTime(); if (s.bestTime === null || time < s.bestTime) s.bestTime = time; } else { s.currentStreak = 0; } saveStats(); };
+        
+        const loadStats = async () => {
+            try {
+                const data = await vkBridge.send('VKWebAppStorageGet', { keys: ['wordleStats'] });
+                if (data.keys[0].value) {
+                    stats = JSON.parse(data.keys[0].value);
+                } else {
+                    stats = {};
+                }
+            } catch (error) {
+                console.log('Ошибка загрузки статистики из VK Storage:', error);
+                stats = {};
+            }
+            for (let i = 4; i <= 11; i++) {
+                if (!stats[i]) {
+                    stats[i] = { played: 0, wins: 0, bestTime: null, currentStreak: 0, maxStreak: 0 };
+                }
+            }
+        };
+        
+        const saveStats = async () => {
+            try {
+                await vkBridge.send('VKWebAppStorageSet', {
+                    key: 'wordleStats',
+                    value: JSON.stringify(stats)
+                });
+            } catch (error) {
+                console.log('Ошибка сохранения статистики в VK Storage:', error);
+            }
+        };
+
+        const updateStats = (isWin) => { 
+            const s = stats[wordLength]; 
+            s.played++; 
+            if (isWin) { 
+                s.wins++; 
+                s.currentStreak++; 
+                if (s.currentStreak > s.maxStreak) s.maxStreak = s.currentStreak; 
+                const time = getElapsedTime(); 
+                if (s.bestTime === null || time < s.bestTime) s.bestTime = time; 
+            } else { 
+                s.currentStreak = 0; 
+            } 
+            saveStats(); 
+        };
+
         const displayStats = () => { const content = document.getElementById('stats-content'); content.innerHTML = ''; let hasStats = false; for (let i = 4; i <= 11; i++) { const s = stats[i]; if (s.played > 0) { hasStats = true; const winRate = Math.round((s.wins / s.played) * 100); const bestTimeFormatted = s.bestTime !== null ? `${String(Math.floor(s.bestTime / 60)).padStart(2, '0')}:${String(s.bestTime % 60).padStart(2, '0')}` : '–'; const catDiv = document.createElement('div'); catDiv.innerHTML = `<h3>${i} букв</h3><div class="stat-item"><p>${s.played}</p><span class="subtext">Сыграно</span></div><div class="stat-item"><p>${winRate}%</p><span class="subtext">Побед</span></div><div class="stat-item"><p>${bestTimeFormatted}</p><span class="subtext">Лучшее время</span></div><div class="stat-item"><p>${s.maxStreak}</p><span class="subtext">Макс. серия</span></div>`; content.appendChild(catDiv); } } if (!hasStats) content.innerHTML = '<p>Вы еще не сыграли ни одной игры.</p>'; };
         
         const generateUserCode = () => {
